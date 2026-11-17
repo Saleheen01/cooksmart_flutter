@@ -1,14 +1,15 @@
 import 'dart:convert';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+
 import '../models/recipe.dart';
 
 /// Thin client for Gemini.
 ///
-/// Pass the key at build/run time instead of committing it to source control:
-/// `flutter run --dart-define=GEMINI_API_KEY=...`.
+/// Pass a development key at run time instead of committing it to source
+/// control. A key compiled into a mobile app can still be extracted from it;
+/// production requests should go through a trusted backend.
 class GeminiService {
- // GeminiService({String? apiKey, String model = 'gemini-1.5-flash'})
   GeminiService({String? apiKey, String model = 'gemini-3.6-flash'})
     : _apiKey = apiKey ?? const String.fromEnvironment('GEMINI_API_KEY'),
       _modelName = model;
@@ -79,8 +80,8 @@ Include measured quantities for every ingredient and 3-8 numbered steps.
 ''');
 
     try {
-      // Robust JSON extraction in case Gemini includes markdown fences
-      String cleanJson = response;
+      // Extract JSON in case Gemini includes Markdown fences.
+      var cleanJson = response;
       if (cleanJson.contains('```')) {
         final start = cleanJson.indexOf('{');
         final end = cleanJson.lastIndexOf('}');
@@ -94,8 +95,8 @@ Include measured quantities for every ingredient and 3-8 numbered steps.
         throw const FormatException('Gemini response was not a JSON object.');
       }
       return Recipe.fromGemini(decoded, image: fallbackImage);
-    } on FormatException catch (e) {
-      throw FormatException('Invalid recipe format from AI: ${e.message}');
+    } on FormatException catch (error) {
+      throw FormatException('Invalid recipe format from AI: ${error.message}');
     } catch (error) {
       throw FormatException('Could not parse Gemini recipe: $error');
     }
