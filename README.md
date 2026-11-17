@@ -12,16 +12,16 @@ again.
 ## What is inside
 
 - **Discover** - Search and filter recipes by categories such as Quick & Easy,
-	High Protein, Italian, Asian, and Keto.
+  High Protein, Italian, Asian, and Keto.
 - **Pantry & Ingredients** - Add ingredients one at a time, use common pantry
-	staples, and remove everything with a single action.
+  staples, and remove everything with a single action.
 - **AI Recipe Builder** - Send your ingredients, dietary goal, and cooking-time
-	preference to Gemini for a new recipe.
+  preference to Gemini for a new recipe.
 - **Recipe details** - Follow measured ingredients and numbered instructions,
-	check ingredients off as you go, and start a timer for timed steps.
+  check ingredients off as you go, and start a timer for timed steps.
 - **Personal Cookbook** - Save recipes and find them later with search and
-	filters for favorites, short recipes, protein-focused meals, and vegetarian
-	options.
+  filters for favorites, short recipes, protein-focused meals, and vegetarian
+  options.
 
 The app is intentionally mobile-first. On wider screens, the experience stays
 in a centered phone-sized frame so the cooking flow remains easy to scan.
@@ -37,45 +37,51 @@ in a centered phone-sized frame so the cooking flow remains easy to scan.
 Open the project root, `cooksmart_flutter`, in Android Studio or VS Code. Do
 not open only the `android/` directory.
 
+For local development, provide a Gemini API key at run time:
+
 ```powershell
 flutter pub get
 flutter run --dart-define=GEMINI_API_KEY=your_key_here
 ```
 
-The app can still build without the define, but generating a recipe requires a
-working Gemini configuration. Before sharing a build publicly, remove any
-fallback credential from `GeminiService` and use a backend-held secret instead.
+The app can build without the define, but AI recipe generation requires a
+working Gemini configuration.
 
-## Gemini configuration
+## Gemini configuration and security
 
 Gemini is accessed through `google_generative_ai` in
-`lib/services/gemini_service.dart`. Pass the key at run or build time rather
-than adding it to source control:
+`lib/services/gemini_service.dart`. The current source reads the key from the
+`GEMINI_API_KEY` compile-time define (or an explicitly supplied constructor
+argument); it does not contain a hard-coded fallback key.
+
+Use the define only for local development and testing:
 
 ```powershell
-# Development
 flutter run --dart-define=GEMINI_API_KEY=your_key_here
-
-# Android release build
-flutter build apk --release --dart-define=GEMINI_API_KEY=your_key_here
 ```
 
-Treat an API key embedded in a mobile build as exposed: APK contents can be
-inspected. For a production release, put Gemini behind a trusted backend with
-server-side secrets, quotas, and abuse protection. If a key has ever been
-committed or shared accidentally, rotate it before distributing the app.
+**Important:** A key passed through `--dart-define` is compiled into the
+Flutter application and can be extracted from a distributed APK. It is not a
+secure way to store a production secret. For production, send Gemini requests
+through a trusted backend that keeps the key server-side and applies
+authentication, quotas, and abuse protection.
+
+If a Gemini key was ever committed to this repository or included in a
+distributed build, revoke/rotate it in Google AI Studio. Removing a key from
+the latest source does not remove it from Git history or previously distributed
+builds.
 
 ## Project shape
 
 ```text
 lib/
-	main.dart                    App entry point and provider setup
-	models/                      Ingredient and recipe data models
-	screens/                     Home, pantry, recipe, and cookbook views
-	services/gemini_service.dart Gemini client and response parsing
-	state/app_state.dart         Shared ingredients, recipes, and saved state
-	theme/                       Colors and the app theme
-	widgets/                     Reusable cards, navigation, and cooking UI
+  main.dart                    App entry point and provider setup
+  models/                      Ingredient and recipe data models
+  screens/                     Home, pantry, recipe, and cookbook views
+  services/gemini_service.dart Gemini client and response parsing
+  state/app_state.dart         Shared ingredients, recipes, and saved state
+  theme/                       Colors and the app theme
+  widgets/                     Reusable cards, navigation, and cooking UI
 ```
 
 The app currently keeps its sample recipes and session state in memory. A
@@ -94,6 +100,9 @@ Build an installable Android package with:
 ```powershell
 flutter build apk --release --dart-define=GEMINI_API_KEY=your_key_here
 ```
+
+Only use a restricted development/test key for this client-side build. Do not
+ship a production Gemini credential inside the APK.
 
 The resulting APK is written to
 `build/app/outputs/flutter-apk/app-release.apk`.
